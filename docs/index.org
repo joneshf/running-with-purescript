@@ -1,0 +1,558 @@
+#+TITLE: Running with PureScript
+#+AUTHOR: Hardy Jones
+
+#+OPTIONS: num:nil
+#+OPTIONS: timestamp:nil
+#+OPTIONS: toc:nil
+#+REVEAL_PLUGINS: (highlight notes)
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.6.0
+#+REVEAL_TRANS: linear
+
+* Row Polymorphism
+
+  #+ATTR_REVEAL: :frag t
+  [[./pepe_silva.jpeg]]
+
+* Products
+** Named Products
+   We can create a product of types
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   data Foo
+     = Foo Int String
+
+   data Bar
+     = Bar Boolean Int Int
+   #+END_SRC
+
+   #+ATTR_REVEAL: :frag t
+   ~Foo~ is a named product of ~Int~ *and* ~String~.
+
+   #+ATTR_REVEAL: :frag t
+   ~Bar~ is a named product of ~Boolean~, ~Int~, *and* ~Int~.
+
+** Anonymous Products
+
+   #+BEGIN_NOTES
+   Since constructing products is a common pattern in programming,
+   we can codify that into a data type.
+
+   We get away from having to to write products explicitly,
+   and can think about products as a first-class entity in the language.
+   #+END_NOTES
+
+   [[https://pursuit.purescript.org/packages/purescript-tuples/4.1.0][purescript-tuples]] provides a data type that abstracts the syntax of products.
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   data Tuple a b
+     = Tuple a b
+   #+END_SRC
+
+   #+BEGIN_NOTES
+   We can make type synonyms that are isomorphic to ~Foo~ and ~Bar~ from before.
+
+   There is an important difference in that these are synonyms.
+   So type checking is different from before.
+   Structurally, they're the same.
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   type Foo = Tuple Int String
+
+   type Bar = Tuple Boolean (Tuple Int Int)
+   #+END_SRC
+
+** Records
+
+*** Anonymous products with named fields
+
+    #+BEGIN_NOTES
+    Tuples require you to know about the entire structure of the product.
+
+    If you want to acccept a tuple as an argument,
+    you need to know the type of both elements of the tuple.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    type Foo = { x :: Int, y :: String }
+
+    type Bar = { x :: Boolean, y :: Int, z :: Int }
+    #+END_SRC
+
+    #+BEGIN_NOTES
+    Note that this is sugar.
+    There's a de-sugared that shows the parity with variants better.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    type Foo = Record ( x :: Int, y :: String )
+
+    type Bar = Record ( x :: Boolean, y :: Int, z :: Int )
+    #+END_SRC
+
+    #+BEGIN_NOTES
+    This isn't actually defined, but it could be!
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    newtype Record (r :: # Type)
+      = Record (StrMap (forall a. a))
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    [[http://try.purescript.org/?backend=core&gist=07c8098e866b684f6a83d186d3cb1a4d][TryPS]] 
+
+*** Differences from tuples
+
+    #+ATTR_REVEAL: :frag t
+    * Order
+
+    #+BEGIN_NOTES
+    Tuples have a specific order.
+    A record has no order.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    Tuple 1 2 /= Tuple 2 1
+    { x: 1, y: 2 } == { y: 2, x: 1 }
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    * Size
+
+    #+BEGIN_NOTES
+    Tuples have a statically known size.
+    There are always exactly two elements in the argument to ~foo~.
+    With row polymorphism, the size of a record can be unknown.
+
+    There are always at least two fields in the argument to ~foo'~.
+    But, there can be more than two fields!
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    foo :: forall a b. Tuple a b -> Unit
+    foo' :: forall a b r. Record ( x :: a, y :: b | r ) -> Unit
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    foo' { x: 1, y: 2, z: 3 }
+    #+END_SRC
+
+* Sums
+
+** Named Sums
+   We can create a sum of types
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   data Foo
+     = FooInt Int
+     | FooString String
+
+   data Bar
+     = BarBoolean Boolean
+     | BarInt1 Int
+     | BarInt2 Int
+   #+END_SRC
+
+   #+ATTR_REVEAL: :frag t
+   ~Foo~ is a named sum of ~Int~ *or* ~String~.
+
+   #+ATTR_REVEAL: :frag t
+   ~Bar~ is a named sum of ~Boolean~, ~Int~, *or* ~Int~.
+
+** Anonymous Sums
+
+   #+BEGIN_NOTES
+   Just like we can codify products as an data type and abstract the syntax away,
+   we can also codify sums as a data type and abstract the syntax away.
+
+   Once again, we get away from having to to write sums explicitly,
+   and can think about sums as a first-class entity in the language.
+   #+END_NOTES
+
+   [[https://pursuit.purescript.org/packages/purescript-either][purescript-either]] provides a data type that abstracts the syntax of sums
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   data Either a b
+     = Left a
+     | Right b
+   #+END_SRC
+
+   #+BEGIN_NOTES
+   We can make type synonyms that are isomorphic to ~Foo~ and ~Bar~ from before.
+
+   There is an important difference in that these are synonyms.
+   So type checking is different from before.
+   Structurally, they're the same.
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   type Foo = Either Int String
+
+   type Bar = Either Boolean (Either Int Int)
+   #+END_SRC
+
+** Variants
+
+*** Anonymous sums with named fields
+
+    #+BEGIN_NOTES
+    Eithers require you to know about the entire structure of the sum.
+
+    If you want to acccept an either as an argument,
+    you need to know the type of both cases of the either.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    type Foo = Variant ( x :: Int, y :: String )
+
+    type Bar = Variant ( x :: Boolean, y :: Int, z :: Int )
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    newtype Variant (r :: # Type)
+      = Variant
+        { tag :: String
+        , value :: forall a. a
+        }
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    [[http://try.purescript.org/?backend=core&gist=7f35f164e7610c8132acd2bab04eca81][TryPS]] 
+
+*** Differences from named sums
+    #+ATTR_REVEAL: :frag t
+    * Provenance
+
+    #+BEGIN_NOTES
+    In order to create a named sum,
+    you have to know the location of that sum.
+
+    You have to have an express dependency on the data type.
+    
+    Variants have no real provenance to speak of.
+    Similar to how you can define a van Laarhoven lens,
+    without depending on lens the library.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    parseInt ::
+      forall r.
+      String ->
+      Variant (success :: Int, typeMismatch :: Unit | r)
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    parsePositive ::
+      forall r.
+      String ->
+      Variant 
+        ( negative :: Unit
+        , success :: Int
+        , typeMismatch :: Unit
+        | r
+        )
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    [[http://try.purescript.org/?backend=core&gist=f165ffac3cd7149820b40560914d126e][TryPS]] 
+
+*** Differences from eithers
+
+    #+ATTR_REVEAL: :frag t
+    * Structure
+
+    #+BEGIN_NOTES
+    Eithers have a structure.
+    The way the synonym is defined is important to type checking.
+
+    Variants lack this structure.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    Right (Left 1) :: Either Boolean (Either Int String)
+    Left (Right 1) :: Either (Either Boolean Int) String
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    inj (SProxy :: SProxy "x") 1 :: forall r. Variant (x :: Int | r)
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    * Size
+
+    #+BEGIN_NOTES
+    Eithers have a statically known size.
+    There are always exactly two cases in the argument to ~foo~.
+    With row polymorphism, the size of a variant can be unknown.
+
+    ~foo'~ needs to be able to handle at least these two cases.
+    But, it can also handle more than these two cases!
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    foo :: forall a b. Either a b -> Unit
+    foo' :: forall a b r. Variant ( x :: a, y :: b | r ) -> Unit
+    #+END_SRC
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    foo' (inj (SProxy :: SProxy "z") 3)
+    #+END_SRC
+
+* Effects
+
+** Eff
+
+   #+BEGIN_NOTES
+   Data type for handling "native" effects: time, randomness, exceptions, etc.
+
+   Whatever you think "native" effects are.
+   Could have randomness NOT be native, for example.
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   foreign import kind Effect
+   foreign import data Eff :: # Effect -> Type -> Type
+   #+END_SRC
+
+   #+BEGIN_NOTES
+   Lots of different libraries define effects.
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   foreign import data CONSOLE :: Effect
+
+   log :: forall e. String -> Eff (console :: CONSOLE | e) Unit
+   #+END_SRC
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   foreign import data RANDOM :: Effect
+
+   randomBool :: forall e. Eff (random :: RANDOM | e) Boolean
+   #+END_SRC
+
+   #+BEGIN_NOTES
+   Interleaving of effects "just works."
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   main :: Eff (console :: CONSOLE, random :: RANDOM) Unit
+   main = do
+     bool <- randomBool
+     if bool then log "Yep!" else log "Nope!"
+   #+END_SRC
+
+** Goods
+   
+*** ST
+  
+    #+BEGIN_NOTES
+    We can track changes to memory as an effect.
+
+    This is similar to how we use `ST s a` in Haskell,
+    but doesn't require an entirely new data type.
+
+    So, we can interleave ST effects with any other effect.
+    But still handle them like normal.
+    #+END_NOTES
+
+    [[https://pursuit.purescript.org/packages/purescript-st][purescript-st]] introduces a data type for local mutatons.
+
+    #+BEGIN_NOTES
+    This uses a rank-2 type (the `h`).
+
+    Think of the type variables as who controls what they can be instantiated to.
+    Since the `a` and `r` are rank-1,
+    the user of the function controls what those values get instantiated to.
+    Since the `h` is rank-2,
+    the implementer of the function controls what those values get instantiated to.
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    foreign import data ST :: Type -> Effect
+    foreign import data STRef :: Type -> Type -> Type
+
+    newSTRef :: forall a h r. a -> Eff (st :: ST h | r) (STRef h a)
+    runST ::
+      forall a r.
+      (forall h. Eff (st :: ST h | r) a) ->
+      Eff r a
+    #+END_SRC
+    
+    #+ATTR_REVEAL: :frag t
+    [[http://try.purescript.org/?backend=core&gist=715939c1eea90aeeb5d4466aacb548c2][TryPS]] 
+
+*** Synchronous Exceptions
+
+    #+BEGIN_NOTES
+    We get a way to introduce effects and a way to eliminate them.
+    #+END_NOTES
+
+    [[https://pursuit.purescript.org/packages/purescript-exceptions/3.0.0][purescript-exceptions]] provides functions for working with synchronous exceptions
+
+    #+ATTR_REVEAL: :frag t
+    #+BEGIN_SRC PureScript
+    foreign import data EXCEPTION :: Effect
+    foreign import data Error :: Type
+
+    throwException ::
+      forall a eff.
+      Error ->
+      Eff (exception :: EXCEPTION | eff) a
+    catchException ::
+      forall a eff.
+      (Error -> Eff eff a) ->
+      Eff (exception :: EXCEPTION | eff) a ->
+      Eff eff a
+    #+END_SRC
+    
+    #+ATTR_REVEAL: :frag t
+    [[http://try.purescript.org/?backend=slides&gist=5bb796d63e2910cea782002a0ac0c905][TryPS]] 
+
+** Bads
+
+*** Unprincipled
+    
+    #+BEGIN_NOTES
+    There's no way to guarantee that an effect that is introduced can be eliminated.
+    
+    What does it mean to "handle" HTTP when underneath it could be the browser,
+    or node, or requests, or some other library?
+    
+    What does it mean to "handle" DOM effects?
+
+    But, someone can write a "handler" for these effects.
+
+    How can you be sure that the handler actually represents all the possible cases?
+    #+END_NOTES
+
+*** Asynchronous Exceptions
+
+    #+BEGIN_NOTES
+    purescript-exceptions only works for synch effects.
+    When an exception is thrown asynchronously, it cannot be handled.
+
+    However, `catchException` looks like it can handle it!
+    #+END_NOTES
+
+    #+ATTR_REVEAL: :frag t
+    [[http://try.purescript.org/?backend=slides&gist=af2fcaad3177e35e2844910c81e63d45][TryPS]] 
+
+** Run
+
+   #+BEGIN_NOTES
+   Similar to the extensible effect libraries in Haskell.
+
+   Might also be similar to the Scala ones?
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   Based on [[http://okmij.org/ftp/Haskell/extensible/exteff.pdf][Extensible Effects]] 
+
+   #+BEGIN_NOTES
+   Don't be afraid of Free here.
+   If you're coming from Haskell,
+   you're probably thinking about how unperformant this is.
+
+   The ecosystem has grown in a way that Free is actually useful;
+   stack safety and performance have been at the forefront.
+
+   In most cases, Free behaves better than an equivalent transformer.
+   #+END_NOTES
+
+   #+ATTR_REVEAL: :frag t
+   #+BEGIN_SRC PureScript
+   newtype VariantF (r :: # Type) a
+     = VariantF
+       { tag :: String
+       , value :: forall f. f a
+       , map :: forall b c f. (b -> c) -> f b -> f c
+       }
+   
+   newtype Run r a = Run (Free (VariantF r) a)
+   #+END_SRC
+
+   
+** Conventional Effects
+
+   * [[https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.Except][Except]]
+
+   * [[https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.Reader][Reader]]
+
+   * [[https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.State][State]]
+
+   * [[https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.Writer][Writer]]
+ 
+** [[https://pursuit.purescript.org/packages/purescript-run-console-experiment/2.0.1][run-console-experiment]] 
+
+** [[https://pursuit.purescript.org/packages/purescript-run-streaming/1.0.0][run-streaming]] 
+   
+
+* More Row Polymorphism!
+
+ * [[https://pursuit.purescript.org/packages/purescript-home-run-ball/0.2.0][home-run-ball]]  
+
+   #+BEGIN_NOTES
+   Library for string validation.
+
+   Define a set of rules, apply them to a value.
+   #+END_NOTES
+
+ * [[https://pursuit.purescript.org/packages/purescript-record/0.2.5][record]] 
+  
+   #+BEGIN_NOTES
+   Library for record manipulation.
+
+   Has an efficient linear API for building a record in place.
+   #+END_NOTES
+
+ * [[https://pursuit.purescript.org/packages/purescript-simple-json/1.1.0][simple-json]]
+   
+   #+BEGIN_NOTES
+   Library for converting to and from ~Foreign~.
+
+   Has instances for records _and_ variants!
+   #+END_NOTES
+
+ * [[https://pursuit.purescript.org/packages/purescript-sql/0.1.0][typelevel-sql]] 
+
+   #+BEGIN_NOTES
+   Library for generating SQL from types
+   #+END_NOTES
+
+ * [[https://github.com/justinwoo/awesome-rowlist][Awesome RowList]] 
+
+   #+BEGIN_NOTES
+   An attempt to catalog RowList/RowToList/row type content and memes
+   #+END_NOTES
+
+* Thank You!!!
+
+* Credits
+
+ * [[https://twitter.com/jusrin00/status/933428832618545153][Pepe Silvia]]

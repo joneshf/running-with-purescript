@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Running with PureScript</title>
+<meta name="author" content="(Hardy Jones)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/css/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/css/theme/moon.css" id="theme"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/lib/css/zenburn.css"/>
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Running with PureScript</h1><h2 class="author">Hardy Jones</h2>
+</section>
+
+<section>
+<section id="slide-org2e217fc">
+<h2 id="org2e217fc">Row Polymorphism</h2>
+
+<div class="figure">
+<p><img src="./pepe_silva.jpeg" alt="pepe_silva.jpeg" class="fragment" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org4986fd9">
+<h2 id="org4986fd9">Products</h2>
+<div class="outline-text-2" id="text-org4986fd9">
+</div>
+</section>
+<section id="slide-org0582591">
+<h3 id="org0582591">Named Products</h3>
+<p>
+We can create a product of types
+</p>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >data Foo
+  = Foo Int String
+
+data Bar
+  = Bar Boolean Int Int
+</code></pre>
+</div>
+
+<p class="fragment">
+<code>Foo</code> is a named product of <code>Int</code> <b>and</b> <code>String</code>.
+</p>
+
+<p class="fragment">
+<code>Bar</code> is a named product of <code>Boolean</code>, <code>Int</code>, <b>and</b> <code>Int</code>.
+</p>
+
+</section>
+<section id="slide-orgc24a2b3">
+<h3 id="orgc24a2b3">Anonymous Products</h3>
+<aside class="notes">
+<p>
+Since constructing products is a common pattern in programming,
+we can codify that into a data type.
+</p>
+
+<p>
+We get away from having to to write products explicitly,
+and can think about products as a first-class entity in the language.
+</p>
+
+</aside>
+
+<p>
+<a href="https://pursuit.purescript.org/packages/purescript-tuples/4.1.0">purescript-tuples</a> provides a data type that abstracts the syntax of products.
+</p>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >data Tuple a b
+  = Tuple a b
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+We can make type synonyms that are isomorphic to <code>Foo</code> and <code>Bar</code> from before.
+</p>
+
+<p>
+There is an important difference in that these are synonyms.
+So type checking is different from before.
+Structurally, they're the same.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >type Foo = Tuple Int String
+
+type Bar = Tuple Boolean (Tuple Int Int)
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org6b02029">
+<h3 id="org6b02029">Records</h3>
+<div class="outline-text-3" id="text-org6b02029">
+</div>
+</section>
+<section id="slide-org38e3b49">
+<h4 id="org38e3b49">Anonymous products with named fields</h4>
+<aside class="notes">
+<p>
+Tuples require you to know about the entire structure of the product.
+</p>
+
+<p>
+If you want to acccept a tuple as an argument,
+you need to know the type of both elements of the tuple.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >type Foo = { x :: Int, y :: String }
+
+type Bar = { x :: Boolean, y :: Int, z :: Int }
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+Note that this is sugar.
+There's a de-sugared that shows the parity with variants better.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >type Foo = Record ( x :: Int, y :: String )
+
+type Bar = Record ( x :: Boolean, y :: Int, z :: Int )
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+This isn't actually defined, but it could be!
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >newtype Record (r :: # Type)
+  = Record (StrMap (forall a. a))
+</code></pre>
+</div>
+
+<p class="fragment">
+<a href="http://try.purescript.org/?backend=core&amp;gist=07c8098e866b684f6a83d186d3cb1a4d" class="fragment">TryPS</a> 
+</p>
+
+</section>
+<section id="slide-org09e2227">
+<h4 id="org09e2227">Differences from tuples</h4>
+<ul class="fragment">
+<li>Order</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Tuples have a specific order.
+A record has no order.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >Tuple 1 2 /= Tuple 2 1
+{ x: 1, y: 2 } == { y: 2, x: 1 }
+</code></pre>
+</div>
+
+<ul class="fragment">
+<li>Size</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Tuples have a statically known size.
+There are always exactly two elements in the argument to <code>foo</code>.
+With row polymorphism, the size of a record can be unknown.
+</p>
+
+<p>
+There are always at least two fields in the argument to <code>foo'</code>.
+But, there can be more than two fields!
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foo :: forall a b. Tuple a b -&gt; Unit
+foo' :: forall a b r. Record ( x :: a, y :: b | r ) -&gt; Unit
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foo' { x: 1, y: 2, z: 3 }
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org065a208">
+<h2 id="org065a208">Sums</h2>
+<div class="outline-text-2" id="text-org065a208">
+</div>
+</section>
+<section id="slide-org5a46200">
+<h3 id="org5a46200">Named Sums</h3>
+<p>
+We can create a sum of types
+</p>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >data Foo
+  = FooInt Int
+  | FooString String
+
+data Bar
+  = BarBoolean Boolean
+  | BarInt1 Int
+  | BarInt2 Int
+</code></pre>
+</div>
+
+<p class="fragment">
+<code>Foo</code> is a named sum of <code>Int</code> <b>or</b> <code>String</code>.
+</p>
+
+<p class="fragment">
+<code>Bar</code> is a named sum of <code>Boolean</code>, <code>Int</code>, <b>or</b> <code>Int</code>.
+</p>
+
+</section>
+<section id="slide-orgbc3e386">
+<h3 id="orgbc3e386">Anonymous Sums</h3>
+<aside class="notes">
+<p>
+Just like we can codify products as an data type and abstract the syntax away,
+we can also codify sums as a data type and abstract the syntax away.
+</p>
+
+<p>
+Once again, we get away from having to to write sums explicitly,
+and can think about sums as a first-class entity in the language.
+</p>
+
+</aside>
+
+<p>
+<a href="https://pursuit.purescript.org/packages/purescript-either">purescript-either</a> provides a data type that abstracts the syntax of sums
+</p>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >data Either a b
+  = Left a
+  | Right b
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+We can make type synonyms that are isomorphic to <code>Foo</code> and <code>Bar</code> from before.
+</p>
+
+<p>
+There is an important difference in that these are synonyms.
+So type checking is different from before.
+Structurally, they're the same.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >type Foo = Either Int String
+
+type Bar = Either Boolean (Either Int Int)
+</code></pre>
+</div>
+
+</section>
+<section id="slide-org3e0c8ac">
+<h3 id="org3e0c8ac">Variants</h3>
+<div class="outline-text-3" id="text-org3e0c8ac">
+</div>
+</section>
+<section id="slide-org86ce028">
+<h4 id="org86ce028">Anonymous sums with named fields</h4>
+<aside class="notes">
+<p>
+Eithers require you to know about the entire structure of the sum.
+</p>
+
+<p>
+If you want to acccept an either as an argument,
+you need to know the type of both cases of the either.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >type Foo = Variant ( x :: Int, y :: String )
+
+type Bar = Variant ( x :: Boolean, y :: Int, z :: Int )
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >newtype Variant (r :: # Type)
+  = Variant
+    { tag :: String
+    , value :: forall a. a
+    }
+</code></pre>
+</div>
+
+<p class="fragment">
+<a href="http://try.purescript.org/?backend=core&amp;gist=7f35f164e7610c8132acd2bab04eca81" class="fragment">TryPS</a> 
+</p>
+
+</section>
+<section id="slide-org295376d">
+<h4 id="org295376d">Differences from named sums</h4>
+<ul class="fragment">
+<li>Provenance</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+In order to create a named sum,
+you have to know the location of that sum.
+</p>
+
+<p>
+You have to have an express dependency on the data type.
+</p>
+
+<p>
+Variants have no real provenance to speak of.
+Similar to how you can define a van Laarhoven lens,
+without depending on lens the library.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >parseInt ::
+  forall r.
+  String -&gt;
+  Variant (success :: Int, typeMismatch :: Unit | r)
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >parsePositive ::
+  forall r.
+  String -&gt;
+  Variant 
+    ( negative :: Unit
+    , success :: Int
+    , typeMismatch :: Unit
+    | r
+    )
+</code></pre>
+</div>
+
+<p class="fragment">
+<a href="http://try.purescript.org/?backend=core&amp;gist=f165ffac3cd7149820b40560914d126e" class="fragment">TryPS</a> 
+</p>
+
+</section>
+<section id="slide-org6c8e354">
+<h4 id="org6c8e354">Differences from eithers</h4>
+<ul class="fragment">
+<li>Structure</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Eithers have a structure.
+The way the synonym is defined is important to type checking.
+</p>
+
+<p>
+Variants lack this structure.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >Right (Left 1) :: Either Boolean (Either Int String)
+Left (Right 1) :: Either (Either Boolean Int) String
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >inj (SProxy :: SProxy "x") 1 :: forall r. Variant (x :: Int | r)
+</code></pre>
+</div>
+
+<ul class="fragment">
+<li>Size</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Eithers have a statically known size.
+There are always exactly two cases in the argument to <code>foo</code>.
+With row polymorphism, the size of a variant can be unknown.
+</p>
+
+<p>
+<code>foo'</code> needs to be able to handle at least these two cases.
+But, it can also handle more than these two cases!
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foo :: forall a b. Either a b -&gt; Unit
+foo' :: forall a b r. Variant ( x :: a, y :: b | r ) -&gt; Unit
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foo' (inj (SProxy :: SProxy "z") 3)
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org70b33e3">
+<h2 id="org70b33e3">Effects</h2>
+<div class="outline-text-2" id="text-org70b33e3">
+</div>
+</section>
+<section id="slide-org7d00983">
+<h3 id="org7d00983">Eff</h3>
+<aside class="notes">
+<p>
+Data type for handling "native" effects: time, randomness, exceptions, etc.
+</p>
+
+<p>
+Whatever you think "native" effects are.
+Could have randomness NOT be native, for example.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foreign import kind Effect
+foreign import data Eff :: # Effect -&gt; Type -&gt; Type
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+Lots of different libraries define effects.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foreign import data CONSOLE :: Effect
+
+log :: forall e. String -&gt; Eff (console :: CONSOLE | e) Unit
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foreign import data RANDOM :: Effect
+
+randomBool :: forall e. Eff (random :: RANDOM | e) Boolean
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+Interleaving of effects "just works."
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >main :: Eff (console :: CONSOLE, random :: RANDOM) Unit
+main = do
+  bool &lt;- randomBool
+  if bool then log "Yep!" else log "Nope!"
+</code></pre>
+</div>
+
+</section>
+<section id="slide-orgbd84db4">
+<h3 id="orgbd84db4">Goods</h3>
+<div class="outline-text-3" id="text-orgbd84db4">
+</div>
+</section>
+<section id="slide-org1004716">
+<h4 id="org1004716">ST</h4>
+<aside class="notes">
+<p>
+We can track changes to memory as an effect.
+</p>
+
+<p>
+This is similar to how we use `ST s a` in Haskell,
+but doesn't require an entirely new data type.
+</p>
+
+<p>
+So, we can interleave ST effects with any other effect.
+But still handle them like normal.
+</p>
+
+</aside>
+
+<p>
+<a href="https://pursuit.purescript.org/packages/purescript-st">purescript-st</a> introduces a data type for local mutatons.
+</p>
+
+<aside class="notes">
+<p>
+This uses a rank-2 type (the `h`).
+</p>
+
+<p>
+Think of the type variables as who controls what they can be instantiated to.
+Since the `a` and `r` are rank-1,
+the user of the function controls what those values get instantiated to.
+Since the `h` is rank-2,
+the implementer of the function controls what those values get instantiated to.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foreign import data ST :: Type -&gt; Effect
+foreign import data STRef :: Type -&gt; Type -&gt; Type
+
+newSTRef :: forall a h r. a -&gt; Eff (st :: ST h | r) (STRef h a)
+runST ::
+  forall a r.
+  (forall h. Eff (st :: ST h | r) a) -&gt;
+  Eff r a
+</code></pre>
+</div>
+
+<p class="fragment">
+<a href="http://try.purescript.org/?backend=core&amp;gist=715939c1eea90aeeb5d4466aacb548c2" class="fragment">TryPS</a> 
+</p>
+
+</section>
+<section id="slide-org7661094">
+<h4 id="org7661094">Synchronous Exceptions</h4>
+<aside class="notes">
+<p>
+We get a way to introduce effects and a way to eliminate them.
+</p>
+
+</aside>
+
+<p>
+<a href="https://pursuit.purescript.org/packages/purescript-exceptions/3.0.0">purescript-exceptions</a> provides functions for working with synchronous exceptions
+</p>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >foreign import data EXCEPTION :: Effect
+foreign import data Error :: Type
+
+throwException ::
+  forall a eff.
+  Error -&gt;
+  Eff (exception :: EXCEPTION | eff) a
+catchException ::
+  forall a eff.
+  (Error -&gt; Eff eff a) -&gt;
+  Eff (exception :: EXCEPTION | eff) a -&gt;
+  Eff eff a
+</code></pre>
+</div>
+
+<p class="fragment">
+<a href="http://try.purescript.org/?backend=slides&amp;gist=5bb796d63e2910cea782002a0ac0c905" class="fragment">TryPS</a> 
+</p>
+
+</section>
+<section id="slide-org418256e">
+<h3 id="org418256e">Bads</h3>
+<div class="outline-text-3" id="text-org418256e">
+</div>
+</section>
+<section id="slide-orgbd7d2df">
+<h4 id="orgbd7d2df">Unprincipled</h4>
+<aside class="notes">
+<p>
+There's no way to guarantee that an effect that is introduced can be eliminated.
+</p>
+
+<p>
+What does it mean to "handle" HTTP when underneath it could be the browser,
+or node, or requests, or some other library?
+</p>
+
+<p>
+What does it mean to "handle" DOM effects?
+</p>
+
+<p>
+But, someone can write a "handler" for these effects.
+</p>
+
+<p>
+How can you be sure that the handler actually represents all the possible cases?
+</p>
+
+</aside>
+
+</section>
+<section id="slide-org60d56c9">
+<h4 id="org60d56c9">Asynchronous Exceptions</h4>
+<aside class="notes">
+<p>
+purescript-exceptions only works for synch effects.
+When an exception is thrown asynchronously, it cannot be handled.
+</p>
+
+<p>
+However, `catchException` looks like it can handle it!
+</p>
+
+</aside>
+
+<p class="fragment">
+<a href="http://try.purescript.org/?backend=slides&amp;gist=af2fcaad3177e35e2844910c81e63d45" class="fragment">TryPS</a> 
+</p>
+
+</section>
+<section id="slide-orgc4d77e4">
+<h3 id="orgc4d77e4">Run</h3>
+<aside class="notes">
+<p>
+Similar to the extensible effect libraries in Haskell.
+</p>
+
+<p>
+Might also be similar to the Scala ones?
+</p>
+
+</aside>
+
+<p class="fragment">
+Based on <a href="http://okmij.org/ftp/Haskell/extensible/exteff.pdf" class="fragment">Extensible Effects</a> 
+</p>
+
+<aside class="notes">
+<p>
+Don't be afraid of Free here.
+If you're coming from Haskell,
+you're probably thinking about how unperformant this is.
+</p>
+
+<p>
+The ecosystem has grown in a way that Free is actually useful;
+stack safety and performance have been at the forefront.
+</p>
+
+<p>
+In most cases, Free behaves better than an equivalent transformer.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre class="fragment"><code class="PureScript" >newtype VariantF (r :: # Type) a
+  = VariantF
+    { tag :: String
+    , value :: forall f. f a
+    , map :: forall b c f. (b -&gt; c) -&gt; f b -&gt; f c
+    }
+
+newtype Run r a = Run (Free (VariantF r) a)
+</code></pre>
+</div>
+
+
+</section>
+<section id="slide-org825697a">
+<h3 id="org825697a">Conventional Effects</h3>
+<ul>
+<li><a href="https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.Except">Except</a></li>
+
+<li><a href="https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.Reader">Reader</a></li>
+
+<li><a href="https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.State">State</a></li>
+
+<li><a href="https://pursuit.purescript.org/packages/purescript-run/1.0.0/docs/Run.Writer">Writer</a></li>
+
+</ul>
+
+</section>
+<section id="slide-org68d4d0c">
+<h3 id="org68d4d0c"><a href="https://pursuit.purescript.org/packages/purescript-run-console-experiment/2.0.1">run-console-experiment</a></h3>
+
+</section>
+<section id="slide-org9f464f7">
+<h3 id="org9f464f7"><a href="https://pursuit.purescript.org/packages/purescript-run-streaming/1.0.0">run-streaming</a></h3>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgeb2378f">
+<h2 id="orgeb2378f">More Row Polymorphism!</h2>
+<ul>
+<li><p>
+<a href="https://pursuit.purescript.org/packages/purescript-home-run-ball/0.2.0">home-run-ball</a>  
+</p>
+
+<aside class="notes">
+<p>
+Library for string validation.
+</p>
+
+<p>
+Define a set of rules, apply them to a value.
+</p>
+
+</aside></li>
+
+<li><p>
+<a href="https://pursuit.purescript.org/packages/purescript-record/0.2.5">record</a> 
+</p>
+
+<aside class="notes">
+<p>
+Library for record manipulation.
+</p>
+
+<p>
+Has an efficient linear API for building a record in place.
+</p>
+
+</aside></li>
+
+<li><p>
+<a href="https://pursuit.purescript.org/packages/purescript-simple-json/1.1.0">simple-json</a>
+</p>
+
+<aside class="notes">
+<p>
+Library for converting to and from <code>Foreign</code>.
+</p>
+
+<p>
+Has instances for records <span class="underline">and</span> variants!
+</p>
+
+</aside></li>
+
+<li><p>
+<a href="https://pursuit.purescript.org/packages/purescript-sql/0.1.0">typelevel-sql</a> 
+</p>
+
+<aside class="notes">
+<p>
+Library for generating SQL from types
+</p>
+
+</aside></li>
+
+<li><p>
+<a href="https://github.com/justinwoo/awesome-rowlist">Awesome RowList</a> 
+</p>
+
+<aside class="notes">
+<p>
+An attempt to catalog RowList/RowToList/row type content and memes
+</p>
+
+</aside></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org0767bc1">
+<h2 id="org0767bc1">Thank You!!!</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-org1c7248c">
+<h2 id="org1c7248c">Credits</h2>
+<ul>
+<li><a href="https://twitter.com/jusrin00/status/933428832618545153">Pepe Silvia</a></li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/lib/js/head.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: 'c',
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js@3.6.0/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>
